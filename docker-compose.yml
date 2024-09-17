@@ -1,0 +1,12 @@
+version: '3'
+services:
+  pgvector:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5434:5432
+    environment:
+      - POSTGRES_USER=sf_user
+      - POSTGRES_PASSWORD=sf_password
+      - POSTGRES_DB=semantic_find
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
