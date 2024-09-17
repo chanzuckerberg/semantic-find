@@ -18,7 +18,9 @@ classifiers = [
 ]
 license = {text = "MIT license"}
 dependencies = [
-   "psycopg2-binary==2.9.9"
+   "psycopg2-binary==2.9.9",
+   "numpy", 
+   "pgvector"
   
 ]
 
