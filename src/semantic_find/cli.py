@@ -1,21 +1,18 @@
 """Console script for semantic_find."""
+import argparse
 import semantic_find
 
-import typer
-from rich.console import Console
-
-app = typer.Typer()
-console = Console()
-
-
-@app.command()
 def main():
     """Console script for semantic_find."""
-    console.print("Replace this message by putting your code into "
-               "semantic_find.cli.main")
-    console.print("See Typer documentation at https://typer.tiangolo.com/")
+    parser = argparse.ArgumentParser(description="Console script for semantic_find.")
+    # Add arguments here, for example:
+    # parser.add_argument('arg_name', type=str, help='Description of the argument')
+
+    parser.add_argument("query", type=str, help="Query to search for")
+
+    args = parser.parse_args()
+    semantic_find.search(args.query)
     
 
-
 if __name__ == "__main__":
-    app()
+    main()
