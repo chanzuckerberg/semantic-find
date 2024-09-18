@@ -1,5 +1,15 @@
-# open-source-starter
-starter template for CZI open source projects
+## Installation
+First create a python virtual environment with `python3 -m venv .venv` or `virtualenv -p python3 .venv`. 
+
+Activate the environment with `source .venv/bin/activate`. 
+
+Install the python dependencies with `make install` or `pip install '.[dev]'`
+
+Initialize the database with `make up`. It takes 10 seconds to wait for the docker container to come up. 
+
+To load the database run `make load`. On the first run it takes a while for the model to download and initialize. 
+
+Run a query with: `python3 src/semantic_find/cli.py search "Tell me about potatoes"`. 
 
 ## Code of Conduct
 

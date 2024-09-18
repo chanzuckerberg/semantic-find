@@ -33,8 +33,8 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.egg-info' -not -path "./.*" -exec rm -fr {} +
+	find . -name '*.egg' -not -path "./.*" -exec rm -fr {} +
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -83,4 +83,22 @@ dist: clean ## builds source and wheel package
 	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
-	python -m pip install . 
+	python -m pip install '.[dev]'
+
+up: ## start database and initialize
+	docker-compose up -d
+	sleep 10
+	python3 scripts/setup_db.py
+
+down: ## pull the database down and remove the volumes
+	docker-compose down 
+	rm -rf pgdata/* 
+
+start: ## start the database without initializing
+	docker-compose start
+
+stop: ## stop the database without deleting the data
+	docker-compose stop
+
+load: ## load the data into the database
+	python3 src/semantic_find/cli.py insert
