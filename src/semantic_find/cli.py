@@ -22,7 +22,7 @@ def main():
     if args.command == "search":
         semantic_find.search(args.query)
     elif args.command == "insert":
-        semantic_find.insert()
+        semantic_find.insert2()
     
 
 if __name__ == "__main__":
