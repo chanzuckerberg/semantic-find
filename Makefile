@@ -101,4 +101,4 @@ stop: ## stop the database
 	docker-compose stop
 
 load: ## load the data into the database
-	python3 semantic_find/cli.py insert
+	python3 src/semantic_find/cli.py insert
