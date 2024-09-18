@@ -87,6 +87,7 @@ install: clean ## install the package to the active Python's site-packages
 
 up: ## start database and initialize
 	docker-compose up -d
+	sleep 10
 	python3 scripts/setup_db.py
 
 down: ## pull the database down and remove the volumes
