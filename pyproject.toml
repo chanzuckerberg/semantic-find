@@ -19,11 +19,11 @@ classifiers = [
 license = {text = "MIT license"}
 dependencies = [
    "psycopg2-binary==2.9.9",
-   "numpy", 
-   "pgvector", 
-   "flagembedding", 
-   "peft"
-  
+   "numpy",
+   "pgvector",
+   "flagembedding",
+   "peft",
+   "nltk>=3.9.1",
 ]
 
 [project.optional-dependencies]
