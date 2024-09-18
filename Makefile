@@ -94,10 +94,10 @@ down: ## pull the database down and remove the volumes
 	docker-compose down 
 	rm -rf pgdata/* 
 
-start: ## start the database
+start: ## start the database without initializing
 	docker-compose start
 
-stop: ## stop the database
+stop: ## stop the database without deleting the data
 	docker-compose stop
 
 load: ## load the data into the database
