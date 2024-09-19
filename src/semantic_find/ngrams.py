@@ -5,6 +5,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from typing import Optional
 
+
 class NGramIterator:
     """
     Creates various scales of n-gram (sentences and clusters of n adjacent sentences) from a list of paragraphs.
@@ -29,6 +30,9 @@ class NGramIterator:
     - p2s1. p2s2.
     - p2s2. p2s3.
 
+    NOTE: The return type has been changed to a tuple of (fragment, paragraph index) so you know where the fragment
+    came from.
+
     This can be used to create embeddable text fragments at multiple scales of context and detail for use in a
     database.
 
@@ -42,8 +46,9 @@ class NGramIterator:
     def __init__(self, paragraphs: list[str]):
         self.paragraphs = paragraphs
 
-        nltk.download('punkt', quiet=True)
-        
+        nltk.download("punkt", quiet=True)
+        nltk.download("punkt_tab", quiet=True)
+
         self.paragraph_index = 0
         self.item_index = 0
         self.scale = NGramIterator.Scale.SENTENCE
@@ -58,7 +63,7 @@ class NGramIterator:
             raise StopIteration
 
         # print(f"Paragraph index: {self.paragraph_index}, item index: {self.item_index}, scale: {self.scale}")
-        
+
         if self.working_sentences is None:
             paragraph = self.paragraphs[self.paragraph_index]
             self.working_sentences = sent_tokenize(paragraph)
@@ -71,7 +76,7 @@ class NGramIterator:
             if self.item_index >= len(self.working_sentences):
                 self.item_index = 0
                 self.scale = NGramIterator.Scale.CLUSTER
-            return ret
+            return (ret, self.paragraph_index)
         elif self.scale == NGramIterator.Scale.CLUSTER:
             if self.item_index + self.n > len(self.working_sentences):
                 self.paragraph_index += 1
@@ -79,10 +84,16 @@ class NGramIterator:
                 self.working_sentences = None
                 self.scale = NGramIterator.Scale.SENTENCE
                 return self.__next__()
-            
-            ret = ' '.join(s.strip(" \t\n") for s in self.working_sentences[self.item_index:self.item_index+self.n])
+
+            ret = " ".join(
+                s.strip(" \t\n")
+                for s in self.working_sentences[
+                    self.item_index : self.item_index + self.n
+                ]
+            )
             self.item_index += 1
-            return ret
+            return (ret, self.paragraph_index)
+
 
 if __name__ == "__main__":
     print("DEMO: NGramIterator")
@@ -96,7 +107,7 @@ if __name__ == "__main__":
     print("\n\n".join(paragraphs))
 
     print("Generated n-grams:")
-    
+
     ngram_iterator = NGramIterator(paragraphs)
     for ngram in ngram_iterator:
         print(f"- {ngram}")
