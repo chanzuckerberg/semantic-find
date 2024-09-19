@@ -3,8 +3,9 @@ import psycopg2
 import numpy as np
 from pgvector.psycopg2 import register_vector
 from FlagEmbedding import BGEM3FlagModel
-from pathlib import Path
-import re
+from ngrams import NGramIterator
+from parsers import get_data
+from psycopg2.extensions import AsIs
 
 
 
@@ -27,98 +28,67 @@ def search(query: str) -> None:
     model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
     query_emb = model.encode(query)['dense_vecs']
 
-    cursor.execute('SELECT * FROM vector_embeddings ORDER BY embedding <-> %s LIMIT 2', (query_emb,))
-    results = cursor.fetchall()
-    for result in results:
-        print(result)
-
-    cursor.close()
-    conn.commit()
-
-
-def insert():
-    conn = psycopg2.connect(host=POSTGRES_HOST, port=POSTGRES_PORT, user=POSTGRES_USER, password=POSTGRES_PASSWORD, dbname=POSTGRES_DB)
-    register_vector(conn)
-
-    cursor = conn.cursor()
-    test_embedding = np.random.rand(1024)
     cursor.execute("""
-        INSERT INTO vector_embeddings (content, tokens, embedding) 
-                   VALUES (%s, %s, %s)
-                   """, 
-                   ("test", 1, test_embedding)
+                   SELECT 
+                   ve.content,
+                   p.content,
+                   d.title, 
+                   d.file_name,
+                   d.type,
+                   embedding <=> %s::vector as distance,
+                   ve.embedding
+                   FROM vector_embedding ve
+                   JOIN paragraph p ON p.id = ve.paragraph_id
+                   JOIN document d ON d.id = ve.document_id
+                   ORDER BY embedding <-> %s LIMIT 10""", (query_emb, query_emb,)
     )
-    cursor.close()
-    conn.commit()
+    results = cursor.fetchall()
     
+    for index, result in enumerate(results):
+        print("=====================================")
+        print("Result: ", index+1)
+        print("ngram: ", result[0])
+        print()
+        print("paragraph: ", result[1])
+        print()
+        print("title: ", result[2])
+        print("file_name: ", result[3])
+        print("type: ", result[4])
+        print("distance: ", result[5])
+        print("=====================================")
 
-def insert2():
-    conn = psycopg2.connect(host=POSTGRES_HOST, port=POSTGRES_PORT, user=POSTGRES_USER, password=POSTGRES_PASSWORD, dbname=POSTGRES_DB)
-    register_vector(conn)
-
-    cursor = conn.cursor()
-    model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
-    corpus = [
-        "Unlike tomato plants, the potato's most caloric edible component grows under ground, in the soil.",
-        "Sometimes, sentences can even contain discussion of technology, like computers."
-    ]
-    corpus_emb = model.encode(corpus, batch_size=12, max_length=1024)['dense_vecs']
-    for index, sentence in enumerate(corpus):
-        cursor.execute("""
-            INSERT INTO vector_embeddings (content, tokens, embedding) 
-            VALUES (%s, %s, %s)
-            """, 
-            (sentence, len(sentence.split()), corpus_emb[index]) 
-        )
     cursor.close()
     conn.commit()
 
-# This inheritence might not be a good idea but starting off with it
-class DataParser:
-    def __init__(self, data_path: str):
-        self.data_path = data_path
-    
-    def parse(self):
-        raise NotImplementedError
-
-
-class TxtDataParser(DataParser):
-    def parse(self) -> list[dict[str, str]]:
-        with open(self.data_path, "r") as file:
-            txt_data = file.read()
-            paragraphs = re.split(r"\n\n+", txt_data)
-        return [{"paragraph_number": index, "text": paragraph} for index, paragraph in enumerate(paragraphs)]
-
-
-def get_data(data_path: str) -> dict[list[dict[str, str]]]:
-    files = Path(data_path).glob("*")
-    text_dicts = {}
-    for file in files:
-        file_name = file.name.rstrip(file.suffix)
-        if file.suffix == ".txt":
-            paragraph_list = TxtDataParser(file).parse()
-
-        text_dicts[file_name] = paragraph_list
-    return text_dicts
 
 def insert3(data_path: str = "./data/"):
-    text_dicts = get_data(data_path)
-
-
+    texts = get_data(data_path)
+    paragraphs_seen = set()
     conn = psycopg2.connect(host=POSTGRES_HOST, port=POSTGRES_PORT, user=POSTGRES_USER, password=POSTGRES_PASSWORD, dbname=POSTGRES_DB)
     register_vector(conn)
-
     cursor = conn.cursor()
     model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
-    for text_name, paragraphs in text_dicts.items():
-        text_only = [p["text"] for p in paragraphs]
-        corpus_emb = model.encode(text_only, batch_size=12, max_length=1024)
-        for index, paragraph in enumerate(paragraphs):
+    for document in texts:
+        doc = document.__dict__()
+        db_string = cursor.mogrify("INSERT INTO document (%s) values %s RETURNING id", (AsIs(','.join(doc.keys())), tuple(doc.values())))
+        cursor.execute(db_string)
+        conn.commit()
+        document_id = cursor.fetchone()[0]
+
+        ngrams = [(ngram, paragraph_index) for ngram, paragraph_index in NGramIterator(document.get_paragraphs())]
+        corpus_emb = model.encode([ngram[0] for ngram in ngrams], batch_size=12, max_length=1024)
+        for index, (ngram, paragraph_index) in enumerate(ngrams):
+            if paragraph_index not in paragraphs_seen:
+                cursor.execute("INSERT INTO paragraph (content) VALUES (%s) RETURNING id", (document.paragraphs[paragraph_index].content,))
+                conn.commit()
+                paragraph_id = cursor.fetchone()[0]
+                paragraphs_seen.add(paragraph_index)
+        
             cursor.execute("""
-                INSERT INTO vector_embeddings (content, tokens, embedding) 
-                VALUES (%s, %s, %s)
+                INSERT INTO vector_embedding (content, embedding, page_number, start_byte, paragraph_id, document_id) 
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """, 
-                (paragraph["text"], len(paragraph["text"].split()), corpus_emb["dense_vecs"][index]) 
+                (ngram, corpus_emb["dense_vecs"][index], None, None, paragraph_id, document_id) 
             )
     cursor.close()
     conn.commit()

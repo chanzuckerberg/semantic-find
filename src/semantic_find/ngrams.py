@@ -46,6 +46,7 @@ class NGramIterator:
         self.paragraphs = paragraphs
 
         nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
         
         self.paragraph_index = 0
         self.item_index = 0
