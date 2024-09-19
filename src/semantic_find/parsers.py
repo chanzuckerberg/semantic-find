@@ -7,7 +7,7 @@ from datamodels import Document, Paragraph
 class DataParser:
     def __init__(self, data_path: str):
         self.data_path = data_path
-    
+
     def parse(self):
         raise NotImplementedError
 
@@ -17,7 +17,9 @@ class TxtDataParser(DataParser):
         with open(self.data_path, "r") as file:
             txt_data = file.read()
             paragraphs = re.split(r"\n\n+", txt_data)
-        return [Paragraph(index, paragraph) for index, paragraph in enumerate(paragraphs)]
+        return [
+            Paragraph(index, paragraph) for index, paragraph in enumerate(paragraphs)
+        ]
 
 
 def get_data(data_path: str) -> list[Document]:
@@ -28,10 +30,10 @@ def get_data(data_path: str) -> list[Document]:
         if file.suffix == ".txt":
             paragraph_list = TxtDataParser(file).parse()
         doc = Document(
-            file_name= file.name, 
-            title=file_name, 
+            file_name=file.name,
+            title=file_name,
             type=file.suffix,
-            paragraphs=paragraph_list
+            paragraphs=paragraph_list,
         )
         texts.append(doc)
     return texts

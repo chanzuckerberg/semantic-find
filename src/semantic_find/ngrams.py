@@ -5,6 +5,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from typing import Optional
 
+
 class NGramIterator:
     """
     Creates various scales of n-gram (sentences and clusters of n adjacent sentences) from a list of paragraphs.
@@ -45,9 +46,9 @@ class NGramIterator:
     def __init__(self, paragraphs: list[str]):
         self.paragraphs = paragraphs
 
-        nltk.download('punkt', quiet=True)
-        nltk.download('punkt_tab', quiet=True)
-        
+        nltk.download("punkt", quiet=True)
+        nltk.download("punkt_tab", quiet=True)
+
         self.paragraph_index = 0
         self.item_index = 0
         self.scale = NGramIterator.Scale.SENTENCE
@@ -62,7 +63,7 @@ class NGramIterator:
             raise StopIteration
 
         # print(f"Paragraph index: {self.paragraph_index}, item index: {self.item_index}, scale: {self.scale}")
-        
+
         if self.working_sentences is None:
             paragraph = self.paragraphs[self.paragraph_index]
             self.working_sentences = sent_tokenize(paragraph)
@@ -83,10 +84,16 @@ class NGramIterator:
                 self.working_sentences = None
                 self.scale = NGramIterator.Scale.SENTENCE
                 return self.__next__()
-            
-            ret = ' '.join(s.strip(" \t\n") for s in self.working_sentences[self.item_index:self.item_index+self.n])
+
+            ret = " ".join(
+                s.strip(" \t\n")
+                for s in self.working_sentences[
+                    self.item_index : self.item_index + self.n
+                ]
+            )
             self.item_index += 1
             return (ret, self.paragraph_index)
+
 
 if __name__ == "__main__":
     print("DEMO: NGramIterator")
