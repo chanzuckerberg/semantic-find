@@ -1,10 +1,3 @@
-# brew install poppler
-# pip install pdf2image
-# brew install tesseract
-# pip install pytesseract
-
-
-
 import os
 import sys
 import pdf2image
